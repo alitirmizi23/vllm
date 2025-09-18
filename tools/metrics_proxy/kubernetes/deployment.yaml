@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-proxy
+  labels:
+    app: metrics-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metrics-proxy
+  template:
+    metadata:
+      labels:
+        app: metrics-proxy
+    spec:
+      containers:
+        - name: metrics-proxy
+          image: ghcr.io/example/vllm-metrics-proxy:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PROXY_UPSTREAM_URL
+              value: http://vllm-backend:8000
+            - name: PROXY_MODEL_NAME
+              value: your-model-name
+            - name: PROXY_ENGINE_LABEL
+              value: proxy
+          ports:
+            - name: http
+              containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /internal/healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /internal/healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
